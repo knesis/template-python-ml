@@ -1,0 +1,6 @@
+CHANGELOG
+
+v0.X
+---------------------------------------
+- Added placeholder files
+- Added config file with desired parameters

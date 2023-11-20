@@ -1,18 +1,22 @@
+import sys
 import numpy as np
 import pandas as pd
 import tensorflow as tf
+from skimage.transform import resize
 
+# Add internal library to path
+from pathlib import Path
+PKG = str(Path(__file__).resolve(strict=True).parents[2])
+sys.path.append(PKG)
 
-''' Data generator objects for loading batches of data for training
-Agnostic to actual data location (handled by separate data IO object)
-Includes augmentation (may be separate module)
-Subclasses of base generator can be tailored to specific use cases, such as classification, regression, segmentation, etc.
-'''
+# Import internal modules
+from utils.data_utils import BaseDataHandler
+
 
 class BaseDataGenerator(tf.keras.utils.Sequence):
     ''' Base class for generating batches of training data '''
 
-    def __init__(self, df, handler, input_shape, num_classes, batch_size, training=False, shuffle=False):
+    def __init__(self, df:pd.DataFrame, handler:BaseDataHandler, input_shape, num_classes, batch_size, training=False, shuffle=False):
         self.df = df
         self.handler = handler
         self.input_shape = input_shape
@@ -21,8 +25,8 @@ class BaseDataGenerator(tf.keras.utils.Sequence):
         self.training = training
         self.shuffle = shuffle
         # Initialize datapaths and indices
-        self.x = self._get_x_paths()
-        self.y = self._get_y_paths()
+        self.x = self._get_x_info()
+        self.y = self._get_y_info()
         self.idxs = np.arange(len(self.x))
         self.on_epoch_end()
 
@@ -52,11 +56,11 @@ class BaseDataGenerator(tf.keras.utils.Sequence):
         ''' Shuffle indices every epoch, if desired'''
         if self.shuffle: np.random.shuffle(self.idxs)
 
-    def _get_x_paths(self):
+    def _get_x_info(self):
         ''' Parse input data paths from dataframe '''
         raise NotImplementedError("Error: Abstract method from base class. This must be implemented in subclasses")
 
-    def _get_y_paths(self):
+    def _get_y_info(self):
         ''' Parse labelled output data paths from dataframe '''        
         raise NotImplementedError("Error: Abstract method from base class. This must be implemented in subclasses")
 
@@ -67,3 +71,46 @@ class BaseDataGenerator(tf.keras.utils.Sequence):
     def _get_y_data(self, batch_y):
         ''' Load batch labelled output data from source '''
         raise NotImplementedError("Error: Abstract method from base class. This must be implemented in subclasses")
+    
+
+
+class ClassificationDataGenerator(BaseDataGenerator):
+    ''' Data generator for image classification batches '''
+
+    def _get_x_info(self):
+        ''' Return filenames of input images '''
+        xcol = "filename"
+        if xcol not in self.df.columns: raise Exception(f"Data column ({xcol}) not in dataframe")
+        x = self.df[xcol].to_list()
+        return x
+    
+    def _get_y_info(self):
+        ''' Return labels of input images '''
+        ycol = "class_labels"
+        if ycol not in self.df.columns: raise Exception(f"Label column ({ycol}) not in dataframe")
+        y = self.df[ycol].to_list()
+        return y
+    
+    def _get_x_data(self, batch_x):
+        ''' Load images into input batch '''
+        # Initialize batch dataset
+        data_x = np.zeros((self.batch_size,*self.input_shape),dtype="float")
+        for i in np.arange(self.batch_size):
+            # Load image using data handler method
+            fpath = batch_x[i]
+            img = self.handler.load_image(fpath)
+            # Enforce image dimensionality
+            if (len(img.shape)!=3) and (self.input_shape[2]==3):
+                img = np.repeat(img[:,:,np.newaxis],self.input_shape[2],axis=2)
+            # Resize to input shape
+            img = resize(img,self.input_shape,order=2,mode='constant',preserve_range=True)
+            # TODO: Augment image here
+            data_x[i] = img
+
+        return data_x
+    
+    def _get_y_data(self, batch_y):
+        ''' Format labels for classification '''
+        # Convert labels to one-hot representation
+        data_y = tf.keras.utils.to_categorical(batch_y, num_classes=self.num_classes)
+        return data_y

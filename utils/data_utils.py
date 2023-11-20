@@ -1,5 +1,7 @@
 import os,json
 import pandas as pd
+import tifffile
+import tensorflow as tf
 
 class BaseDataHandler():
     ''' Base class for managing input/output data '''
@@ -49,4 +51,19 @@ class LocalDataHandler(BaseDataHandler):
                 data = json.loads(fobj.read())
         except: raise Exception(f"Could not parse JSON file: {fpath}")
         return data
+    
+    def load_image(self, fpath):
+        ''' Load image TIF to NumPy array '''
         
+        if not self.file_exists(fpath): raise FileNotFoundError(f"File does not exist: {fpath}")
+        try: img = tifffile.imread(fpath)
+        except: raise Exception(f"Could not parse TIF file: {fpath}")
+        return img
+        
+    def load_model(self, fpath):
+        ''' Load Keras model from local filesystem '''
+        
+        if not self.file_exists(fpath): raise FileNotFoundError(f"File does not exist: {fpath}")
+        try: model = tf.keras.models.load_model(fpath,compile=True)
+        except: raise Exception(f"Could not parse model file: {fpath}")
+        return model

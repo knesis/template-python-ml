@@ -1,10 +1,11 @@
 {
     "DATA":{
+        "INVENTORY_DATA_SOURCE":"local",
         "INVENTORY_DATA_DIR":"",
         "INVENTORY_CSV":"inventory.csv",
         "TRAINING_MODEL_DIR":"",
         "TRAINING_MODEL_NAME":"",
-        "TRAINING_MODEL_FORMAT":"",
+        "TRAINING_MODEL_FORMAT":"keras",
         "PREDICTION_DATA_DIR":"",
         "PREDICTION_OUTPUT_DIR":""
     },
@@ -16,8 +17,9 @@
         }
     },
     "INVENTORY":{
-        "DATA_SOURCE":"local",
-        "VALIDATION_SPLIT":0.2
+        "VALIDATION_SPLIT":0.2,
+        "SEED":0,
+        "FORCE":false
     },
     "MODEL":{
         "MODEL_NAME":"",
@@ -43,6 +45,7 @@
         "CALLBACKS":[{
             "CALLBACK_NAME":"",
             "CALLBACK_PARAMS":{}
-        }]
+        }],
+        "FORCE":false
     }
 }

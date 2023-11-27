@@ -1,6 +1,9 @@
 import os,argparse
+os.environ["TF_CPP_MIN_LOG_LEVEL"]="3"
 
 from utils.config_utils import PipelineManager
+from utils.data_utils import parse_data_handler
+from prod.inventory import create_inventory
 
 ''' Main pipeline script
 Must parse execution flow and run operations if desired
@@ -13,8 +16,11 @@ def main(config_path):
     # Create pipeline control object
     Manager = PipelineManager(config_path)
 
+    # Inventory of Training Data
+    InventoryHandler = parse_data_handler(Manager.config.data.inventory_data_source)
+    create_inventory(Manager,InventoryHandler)
+
     # TODO: Parse pipeline execution steps and pass manager into them
-    # Inventory
     # Train
     # Predict
 

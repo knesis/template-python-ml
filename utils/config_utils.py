@@ -1,10 +1,5 @@
 import os,json
 
-''' Base classes for parsing and exposing parameters defined in the config file to the pipeline code 
-Actual definition of parameter groups and parameter names 
-Possible pipeline manager object with high-level control and lower-level config objects
-'''
-
 class ParameterObject():
     ''' General purpose object which stores parameters as attributes '''
     __params__ = None
@@ -36,6 +31,7 @@ class ParameterObject():
 class DataParams(ParameterObject):
     ''' Parameter specification for pipeline data locations '''
     __params__ = {
+        "INVENTORY_DATA_SOURCE":None,
         "INVENTORY_DATA_DIR":None,
         "INVENTORY_CSV":"inventory.csv",
         "TRAINING_MODEL_DIR":None,
@@ -55,8 +51,9 @@ class PipelineParams(ParameterObject):
 class InventoryParams(ParameterObject):
     ''' Parameter specification for training data inventory'''
     __params__ = {
-        "DATA_SOURCE":"local",
-        "VALIDATION_SPLIT":0.2
+        "VALIDATION_SPLIT":0.2,
+        "SEED":0,
+        "FORCE":False
     }
 
 class ModelParams(ParameterObject):
@@ -78,7 +75,9 @@ class TrainingParams(ParameterObject):
         "BATCH_SIZE":256,
         "NUM_EPOCHS":100,
         "LOAD_CHECKPOINT":False,
-        "CALLBACKS":[]
+        "CALLBACKS":[],
+        "SEED":0,
+        "FORCE":False
     }
 
 
@@ -100,7 +99,7 @@ class ConfigTree(ParameterObject):
         for g in norm_grps:
             group_data = getattr(self,g)
             ParamCls = norm_grps[g]
-            group_params = ParamCls(group_data)
+            group_params = ParamCls(**group_data)
             setattr(self,g,group_params)
 
 
@@ -118,18 +117,20 @@ class PipelineManager():
         self.inventory_path = os.path.join(DConfig.inventory_data_dir, DConfig.inventory_csv)
         # Model files and save locations
         model_name = DConfig.training_model_name
-        model_ext = DConfig.training_model_format.lower() 
+        model_ext  = DConfig.training_model_format.lower() 
         self.model_dir = os.path.join(DConfig.training_model_dir, model_name)
+
         if model_ext not in ["keras","h5","tf"]:
             raise ValueError(f"Unknown value for training model file format: '{model_ext}'")
         if model_ext == "tf": model_outpath = os.path.join(self.model_dir, model_name)
         else:                 model_outpath = os.path.join(self.model_dir,f"{model_name}.{model_ext}")
+
         self.model_path = model_outpath
         self.checkpoint_path = os.path.join(self.model_dir,f"{model_name}_chk.{model_ext}")
-        self.log_path = os.path.join(self.model_dir,f"{model_name}_log.csv")
+        self.log_path        = os.path.join(self.model_dir,f"{model_name}_log.csv")
         # Prediction data locations
-        self.predictions_dir    = DConfig.prediction_data_dir
-        self.predictions_path = os.path.join(self.prediction_output_dir,"predictions.csv")
+        self.predictions_dir  = DConfig.prediction_data_dir
+        self.predictions_path = os.path.join(DConfig.prediction_output_dir,"predictions.csv")
             
 
     def load_config(self,fpath):

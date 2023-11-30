@@ -1,10 +1,16 @@
+import os,sys
 import tensorflow as tf
 
-''' Collection of training pipeline components which can be referenced in config 
-Includes metrics, losses, optimizers, and callbacks
-With creation of several custom components, may need to split into losses.py, optimizers.py, metrics.py, callbacks.py
-'''
+from pathlib import Path
+PKG = str(Path(__file__).resolve(strict=True).parents[2])
+if PKG not in sys.path: sys.path.append(PKG)
 
+from src.models import xception
+
+
+ALL_MODELS = {
+    "xception":xception.Xception
+}
 ALL_LOSSES = {
     "binary_crossentropy":tf.keras.losses.BinaryCrossentropy,
     "categorical_crossentropy":tf.keras.losses.CategoricalCrossentropy,

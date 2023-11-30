@@ -4,11 +4,8 @@ os.environ["TF_CPP_MIN_LOG_LEVEL"]="3"
 from utils.config_utils import PipelineManager
 from utils.data_utils import parse_data_handler
 from prod.inventory import create_inventory
+from prod.train import train_model
 
-''' Main pipeline script
-Must parse execution flow and run operations if desired
-Data Inventory, Training, Validation, Prediction
-'''
 
 def main(config_path):
     ''' Main deep learning pipeline script '''
@@ -17,12 +14,17 @@ def main(config_path):
     Manager = PipelineManager(config_path)
 
     # Inventory of Training Data
-    InventoryHandler = parse_data_handler(Manager.config.data.inventory_data_source)
-    create_inventory(Manager,InventoryHandler)
+    DataHandler = parse_data_handler(Manager.data_source)
+    InventoryHandler = parse_data_handler(Manager.inventory_source)
+    create_inventory(Manager, DataHandler, InventoryHandler)
 
-    # TODO: Parse pipeline execution steps and pass manager into them
-    # Train
-    # Predict
+    # Model Training
+    ModelHandler = parse_data_handler(Manager.model_source)
+    train_model(Manager, DataHandler, InventoryHandler, ModelHandler)
+
+    # Prediction
+    PredictionHandler = parse_data_handler(Manager.prediction_source)
+    # predict_data(Manager, PredictionHandler, ModelHandler)
 
 
 if __name__=="__main__":

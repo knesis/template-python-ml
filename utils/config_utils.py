@@ -33,10 +33,14 @@ class DataParams(ParameterObject):
     __params__ = {
         "INVENTORY_DATA_SOURCE":None,
         "INVENTORY_DATA_DIR":None,
-        "INVENTORY_CSV":"inventory.csv",
+        "INVENTORY_CSV_SOURCE":"local",
+        "INVENTORY_CSV_DIR":None,
+        "INVENTORY_CSV_NAME":"inventory.csv",
+        "TRAINING_MODEL_SOURCE":None,
         "TRAINING_MODEL_DIR":None,
         "TRAINING_MODEL_NAME":None,
         "TRAINING_MODEL_FORMAT":None,
+        "PREDICTION_DATA_SOURCE":None,
         "PREDICTION_DATA_DIR":None,
         "PREDICTION_OUTPUT_DIR":None
     }
@@ -64,14 +68,15 @@ class ModelParams(ParameterObject):
         "LOSS_NAME":None,
         "LOSS_PARAMS":{},
         "OPTIMIZER_NAME":None,
-        "OPTIMIZER_PARAMS":{},
+        "OPTIMIZER_PARAMS":{
+            "LEARNING_RATE":None
+        },
         "METRICS":[]
     }
 
 class TrainingParams(ParameterObject):
     ''' Parameter specification for optimization hyperparameters'''
     __params__ = {
-        "LEARNING_RATE":1e-4,
         "BATCH_SIZE":256,
         "NUM_EPOCHS":100,
         "LOAD_CHECKPOINT":False,
@@ -112,25 +117,41 @@ class PipelineManager():
         self.data = self.load_config(config_path)
         self.config = ConfigTree(**self.data)
 
-        # Specify input/output paths here to reference in modules
-        DConfig = self.config.data
-        self.inventory_path = os.path.join(DConfig.inventory_data_dir, DConfig.inventory_csv)
-        # Model files and save locations
-        model_name = DConfig.training_model_name
-        model_ext  = DConfig.training_model_format.lower() 
-        self.model_dir = os.path.join(DConfig.training_model_dir, model_name)
+        # Specify data sources for handlers
+        DataConfig = self.config.data
+        self.inventory_source  = DataConfig.inventory_csv_source
+        self.data_source       = DataConfig.inventory_data_source
+        self.model_source      = DataConfig.training_model_source
+        self.prediction_source = DataConfig.prediction_data_source
 
+        # Inventory filepaths
+        self.inventory_data_dir = DataConfig.inventory_data_dir
+        self.inventory_path = os.path.join(DataConfig.inventory_csv_dir, 
+                                           DataConfig.inventory_csv_name)
+        
+        # Training filepaths
+        model_root = DataConfig.training_model_dir
+        model_name = DataConfig.training_model_name
+        model_ext  = DataConfig.training_model_format.lower() 
+        self.model_dir = os.path.join(model_root, model_name)
+
+        # Parse trained model file extension
         if model_ext not in ["keras","h5","tf"]:
             raise ValueError(f"Unknown value for training model file format: '{model_ext}'")
-        if model_ext == "tf": model_outpath = os.path.join(self.model_dir, model_name)
-        else:                 model_outpath = os.path.join(self.model_dir,f"{model_name}.{model_ext}")
+        elif model_ext == "tf": 
+            model_outpath = os.path.join(self.model_dir, model_name,"")
+            model_chkpath = os.path.join(self.model_dir,f"{model_name}_chk","")
+        else:                 
+            model_outpath = os.path.join(self.model_dir,f"{model_name}.{model_ext}")
+            model_chkpath = os.path.join(self.model_dir,f"{model_name}_chk.{model_ext}")
 
-        self.model_path = model_outpath
-        self.checkpoint_path = os.path.join(self.model_dir,f"{model_name}_chk.{model_ext}")
+        self.model_path      = model_outpath
+        self.checkpoint_path = model_chkpath
         self.log_path        = os.path.join(self.model_dir,f"{model_name}_log.csv")
-        # Prediction data locations
-        self.predictions_dir  = DConfig.prediction_data_dir
-        self.predictions_path = os.path.join(DConfig.prediction_output_dir,"predictions.csv")
+
+        # Prediction filepaths
+        self.prediction_data_dir  = DataConfig.prediction_data_dir
+        self.prediction_path = os.path.join(DataConfig.prediction_output_dir,"predictions.csv")
             
 
     def load_config(self,fpath):

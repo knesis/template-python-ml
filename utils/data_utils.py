@@ -8,7 +8,7 @@ class BaseDataHandler():
     ''' Base class for managing input/output data '''
 
     # List files
-    def file_exists(self,fpath:str):
+    def file_exists(self,fpath:str) -> bool:
         ''' Helper function to determine if files exist '''
         raise NotImplementedError("Error: Abstract method from base class. This must be implemented in subclasses")
 
@@ -16,20 +16,24 @@ class BaseDataHandler():
         ''' Get list of all files in location '''
         raise NotImplementedError("Error: Abstract method from base class. This must be implemented in subclasses")
 
+    def makedirs(self,dirpath:str):
+        ''' Create intermediate directories '''
+        raise NotImplementedError("Error: Abstract method from base class. This must be implemented in subclasses")
+
     # Read input data
-    def load_csv(self,fpath:str):
+    def load_csv(self,fpath:str) -> pd.DataFrame:
         ''' Load CSV to dataframe '''
         raise NotImplementedError("Error: Abstract method from base class. This must be implemented in subclasses")
     
-    def load_json(self,fpath:str):
+    def load_json(self,fpath:str) -> dict:
         ''' Load JSON data to dictionary '''
         raise NotImplementedError("Error: Abstract method from base class. This must be implemented in subclasses")
 
-    def load_image(self,fpath:str):
+    def load_image(self,fpath:str) -> np.ndarray:
         ''' Load TIF image to NumPy array '''
         raise NotImplementedError("Error: Abstract method from base class. This must be implemented in subclasses")
     
-    def load_model(self,fpath:str):
+    def load_model(self,fpath:str, compile:bool=True) -> tf.keras.models.Model:
         ''' Load Keras model from file to object'''
         raise NotImplementedError("Error: Abstract method from base class. This must be implemented in subclasses")
 
@@ -71,6 +75,10 @@ class LocalDataHandler(BaseDataHandler):
             all_files.extend(valid_files)
         return all_files
 
+    def makedirs(self,dirpath:str):
+        ''' Make intermediate directories '''
+        os.makedirs(dirpath,exist_ok=True)
+
     # Read input data
     def load_csv(self, fpath):
         ''' Load CSV to dataframe '''
@@ -98,32 +106,35 @@ class LocalDataHandler(BaseDataHandler):
         except: raise Exception(f"Could not parse TIF file: {fpath}")
         return img
         
-    def load_model(self, fpath):
+    def load_model(self, fpath, compile=True):
         ''' Load Keras model from local filesystem '''
         
         if not self.file_exists(fpath): raise FileNotFoundError(f"File does not exist: {fpath}")
-        try: model = tf.keras.models.load_model(fpath,compile=True)
+        try: model = tf.keras.models.load_model(fpath,compile=compile)
         except: raise Exception(f"Could not parse model file: {fpath}")
         return model
 
     # Write output data
     def save_csv(self, df:pd.DataFrame, fpath:str):
         ''' Save dataframe to CSV '''
+        os.makedirs(os.path.dirname(fpath),exist_ok=True)
         df.to_csv(fpath,index=False)
 
     def save_json(self, data:dict, fpath:str):
         ''' Save dict to JSON file '''
+        os.makedirs(os.path.dirname(fpath),exist_ok=True)
         with open(fpath,'w') as fobj:
             json.dump(data,fobj,indent=4)
 
     def save_image(self, img:np.ndarray, fpath:str):
         ''' Save NumPy array to TIF image '''
+        os.makedirs(os.path.dirname(fpath),exist_ok=True)
         tifffile.imwrite(fpath,img,compression="DEFLATE")
 
     def save_model(self, model:tf.keras.models.Model, fpath:str):
         ''' Save Keras model to output location '''
+        os.makedirs(os.path.dirname(fpath),exist_ok=True)
         tf.keras.models.save_model(model,fpath)
-        raise NotImplementedError("Error: Abstract method from base class. This must be implemented in subclasses")
 
 
 

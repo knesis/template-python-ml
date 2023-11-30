@@ -7,20 +7,21 @@ from skimage.transform import resize
 # Add internal library to path
 from pathlib import Path
 PKG = str(Path(__file__).resolve(strict=True).parents[2])
-sys.path.append(PKG)
+if PKG not in sys.path: sys.path.append(PKG)
 
 # Import internal modules
 from utils.data_utils import BaseDataHandler
+from utils.config_utils import ModelParams
 
 
 class BaseDataGenerator(tf.keras.utils.Sequence):
     ''' Base class for generating batches of training data '''
 
-    def __init__(self, df:pd.DataFrame, handler:BaseDataHandler, input_shape, num_classes, batch_size, training=False, shuffle=False):
+    def __init__(self, df:pd.DataFrame, handler:BaseDataHandler, ModelConfig:ModelParams, batch_size, training=False, shuffle=False):
         self.df = df
         self.handler = handler
-        self.input_shape = input_shape
-        self.num_classes = num_classes
+        self.input_shape = ModelConfig.model_params["INPUT_SHAPE"]
+        self.num_classes = ModelConfig.model_params["NUM_CLASSES"]
         self.batch_size = batch_size
         self.training = training
         self.shuffle = shuffle

@@ -2,10 +2,14 @@
     "DATA":{
         "INVENTORY_DATA_SOURCE":"local",
         "INVENTORY_DATA_DIR":"",
-        "INVENTORY_CSV":"inventory.csv",
+        "INVENTORY_CSV_SOURCE":"local",
+        "INVENTORY_CSV_DIR":"./data/inventory",
+        "INVENTORY_CSV_NAME":"inventory.csv",
+        "TRAINING_MODEL_SOURCE":"local",
         "TRAINING_MODEL_DIR":"",
         "TRAINING_MODEL_NAME":"",
         "TRAINING_MODEL_FORMAT":"keras",
+        "PREDICTION_DATA_SOURCE":"local",
         "PREDICTION_DATA_DIR":"",
         "PREDICTION_OUTPUT_DIR":""
     },
@@ -31,14 +35,15 @@
         "LOSS_NAME":"",
         "LOSS_PARAMS":{},
         "OPTIMIZER_NAME":"",
-        "OPTIMIZER_PARAMS":{},
+        "OPTIMIZER_PARAMS":{
+            "LEARNING_RATE":1e-4
+        },
         "METRICS":[{
             "METRIC_NAME":"",
             "METRIC_PARAMS":{}
         }]
     },
     "TRAINING":{
-        "LEARNING_RATE":1e-4,
         "BATCH_SIZE":256,
         "NUM_EPOCHS":100,
         "LOAD_CHECKPOINT":false,
@@ -46,6 +51,7 @@
             "CALLBACK_NAME":"",
             "CALLBACK_PARAMS":{}
         }],
+        "SEED":0,
         "FORCE":false
     }
 }

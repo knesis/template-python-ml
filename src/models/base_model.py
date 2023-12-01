@@ -1,9 +1,6 @@
 import os,sys
 import tensorflow as tf
 
-# TODO: Refactor for proper abstraction of keras.Model and superset methods
-# TODO: Correct to use proper object-oriented programming for get_architecture/load_weights
-
 class BaseModel():
     ''' Base class for Keras models compatible with pipeline '''
     __name__ = "base"
@@ -12,9 +9,15 @@ class BaseModel():
         "NUM_CLASSES":2,
         "INITIAL_WEIGHTS":None
     }
-    __reserved__ = ["__name__","__params__","mro"]
+    __reserved__ = ["__name__","__params__","model","mro"]
 
     def __init__(self, **kwargs):
+        self.model = None
+        self._load_params(**kwargs)
+        self.set_architecture()
+
+    def _load_params(self,**kwargs):
+        ''' Load parameters from config '''
         if self.__params__ is None: raise NotImplementedError("__params__ dict must be initialized for model subclasses")
         # Normalize to lowercase
         norm_params = {p.lower():v for p,v in self.__params__.items()}
@@ -37,17 +40,21 @@ class BaseModel():
         for p in norm_params:
             setattr(self,p,norm_kwargs[p])
 
-
-    def get_architecture(self) -> tf.keras.models.Model:
-        ''' Instantiate uncompiled model architecture here '''
+    def set_architecture(self):
+        ''' Set model architecture as instance attribute (self.model) '''
         raise NotImplementedError("Error: Abstract method from base class. This must be implemented in subclasses")
     
-    def load_weights(self, model:tf.keras.models.Model, ModelHandler):
-        ''' Load initial weights into provided model '''
-        weights_path = model.initial_weights
-        if weights_path:
-            existing_model = ModelHandler.load_model(compile=False)
-            model.set_weights(existing_model.get_weights())
+    def get_architecture(self) -> tf.keras.models.Model:
+        ''' Get uncompiled model architecture object '''
+        if not self.model: raise Exception("Model architecture not defined")
+        return self.model
 
-        return model
+    def load_weights(self, Handler):
+        ''' Load initial weights into provided model '''
+        if not self.model: raise Exception("Model architecture not defined")
+        weights_path = self.model.initial_weights
+        if weights_path:
+            # Set instance model weights from secondary existing model
+            existing_model = Handler.load_model(compile=False)
+            self.model.set_weights(existing_model.get_weights())
 

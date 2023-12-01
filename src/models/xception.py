@@ -11,7 +11,7 @@ class Xception(BaseModel):
         "NUM_CLASSES":2,
         "INITAL_WEIGHTS":None
     }
-    def get_architecture(self) -> models.Model:
+    def set_architecture(self) -> models.Model:
         ''' Model architecture for Xception '''
 
         # Specify custom model input
@@ -26,6 +26,7 @@ class Xception(BaseModel):
         y1_pool = layers.GlobalAveragePooling2D(name="avg_pool")(y1)
         out = layers.Dense(self.num_classes,activation="softmax",name="output")(y1_pool)
 
+        # Set model as instance attribute
         model = models.Model(x, out, name=self.__name__)
-        return model
+        self.model = model
         

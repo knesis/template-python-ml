@@ -12,15 +12,6 @@ from src.training.components import *
 from src.data.generators import *
 
 
-''' Main pipeline script for model training 
-Reads previously created training data inventory
-Instantiates model and loads any pre-existing weights
-Configures hyperparameters and optimization strategy according to config
-Saves checkpoints, training log, and any other specified callbacks
-Creates data generators for training/validation
-Saves intermediate/final training model to output location
-Optional running of validation stats (may require separate file)'''
-
 def main(config_path):
     ''' Initialize data structures for module '''
 
@@ -57,7 +48,7 @@ def train_model(Manager:PipelineManager, DataHandler:BaseDataHandler,
     callbacks       = TrainingConfig.callbacks
     force_flag      = TrainingConfig.force
     seed            = TrainingConfig.seed
-    if seed <= 0: seed=None
+    if seed > 0: tf.keras.utils.set_random_seed(seed)
 
     # Skip model training if output completed
     if ModelHandler.file_exists(outpath) and not force_flag:
@@ -97,20 +88,22 @@ def train_model(Manager:PipelineManager, DataHandler:BaseDataHandler,
         callback_obj = ALL_CALLBACKS[callback_name](**callback_params)
         custom_callbacks.append(callback_obj)
 
+    # TODO: Callbacks save files locally and should be modified to use handler functionality
     callback_chk = tf.keras.callbacks.ModelCheckpoint(chkpath, monitor="val_loss", verbose=1, save_best_only=True)   
     callback_log = tf.keras.callbacks.CSVLogger(logpath,append=use_checkpoint)
     training_callbacks = [callback_chk, callback_log, *custom_callbacks]
     
     # Train data
-    if seed: tf.keras.utils.set_random_seed(seed)
     ModelHandler.makedirs(os.path.dirname(outpath))
     model.fit(x=TrainingData, validation_data=ValidationData, batch_size=batch_size, epochs=num_epochs, 
               callbacks=training_callbacks, verbose=1)
 
-    # Save output model
+    # Save output model and inventory
     ModelHandler.save_model(model, outpath)
-    # TODO: Save training inventory in model location
+    outpath_inventory = os.path.join(Manager.model_dir, f"{os.path.basename(Manager.model_dir)}_inventory.csv")
+    ModelHandler.save_csv(df, outpath_inventory)
 
+    # TODO: Validation statistics 
 
 def setup_model(Manager:PipelineManager, ModelHandler:BaseDataHandler):
     ''' Helper function to configure model architecture and optimization '''
@@ -128,15 +121,14 @@ def setup_model(Manager:PipelineManager, ModelHandler:BaseDataHandler):
     metric_info         = ModelConfig.metrics
 
     # Get model architecture (or checkpoint)
-    # TODO: Simplify model architecture/initial weights/checkpoint logic
     if use_checkpoint:
         model = ModelHandler.load_model(chkpath,compile=False)
     else:
         if model_name not in ALL_MODELS:
             raise Exception(f"Error: Model not implemented: {model_name}")
         ModelCls = ALL_MODELS[model_name](**model_params)
+        ModelCls.load_weights(ModelHandler)
         model = ModelCls.get_architecture()
-        model = ModelCls.load_weights(model,ModelHandler)
 
     # Configure loss function from config
     if loss_name not in ALL_LOSSES:

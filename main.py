@@ -5,6 +5,7 @@ from utils.config_utils import PipelineManager
 from utils.data_utils import parse_data_handler
 from prod.inventory import create_inventory
 from prod.train import train_model
+from prod.predict import predict_data
 
 
 def main(config_path):
@@ -24,7 +25,7 @@ def main(config_path):
 
     # Prediction
     PredictionHandler = parse_data_handler(Manager.prediction_source)
-    # predict_data(Manager, PredictionHandler, ModelHandler)
+    predict_data(Manager, PredictionHandler, ModelHandler)
 
 
 if __name__=="__main__":

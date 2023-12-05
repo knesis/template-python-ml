@@ -1,7 +1,7 @@
 import os,argparse
 os.environ["TF_CPP_MIN_LOG_LEVEL"]="3"
 
-from utils.config_utils import PipelineManager
+from utils.pipeline_utils import PipelineManager
 from utils.data_utils import parse_data_handler
 from prod.inventory import create_inventory
 from prod.train import train_model

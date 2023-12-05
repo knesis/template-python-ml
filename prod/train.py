@@ -6,7 +6,7 @@ from pathlib import Path
 PKG = str(Path(__file__).resolve(strict=True).parents[1])
 if PKG not in sys.path: sys.path.append(PKG)
 
-from utils.config_utils import PipelineManager
+from utils.pipeline_utils import PipelineManager
 from utils.data_utils import BaseDataHandler, parse_data_handler
 from src.training.components import *
 from src.data.generators import *
@@ -63,18 +63,8 @@ def train_model(Manager:PipelineManager, DataHandler:BaseDataHandler,
     df_train = df[df["partition"]=="train"]
     df_valid = df[df["partition"]=="valid"]
 
-    # Parse pipeline task for proper data generator class
-    pipeline_task = Manager.config.pipeline.pipeline_task
-    if pipeline_task == "classification":
-        Generator = ClassificationDataGenerator
-    elif pipeline_task == "segmentation":
-        raise NotImplementedError("Implementation not defined for this pipeline task")
-    elif pipeline_task == "regression":
-        raise NotImplementedError("Implementation not defined for this pipeline task")
-    else:
-        raise Exception(f"Invalid pipeline task: '{pipeline_task}'")
-
     # Create data generators
+    Generator = Manager.task.generator
     TrainingData    = Generator(df_train, DataHandler, ModelConfig, batch_size, training=True, shuffle=True)
     ValidationData  = Generator(df_valid, DataHandler, ModelConfig, batch_size, training=True, shuffle=True)
 

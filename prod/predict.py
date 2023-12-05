@@ -5,7 +5,7 @@ from pathlib import Path
 PKG = str(Path(__file__).resolve(strict=True).parents[1])
 if PKG not in sys.path: sys.path.append(PKG)
 
-from utils.config_utils import PipelineManager
+from utils.pipeline_utils import PipelineManager
 from utils.data_utils import BaseDataHandler, parse_data_handler
 from src.data.generators import *
 
@@ -37,7 +37,7 @@ def predict_data(Manager:PipelineManager, PredictionHandler:BaseDataHandler, Mod
 
     # Skip model training if output completed
     if PredictionHandler.file_exists(outpath):
-        print(f"Trained model already exists: {outpath}")
+        print(f"Prediction CSV already exists: {outpath}")
         return
 
     # Load existing trained model
@@ -47,41 +47,14 @@ def predict_data(Manager:PipelineManager, PredictionHandler:BaseDataHandler, Mod
     fnames = PredictionHandler.list_all_files(rootdir,filetype="tif")
     df = pd.DataFrame(data=[fnames],columns=["filename"])
 
-
-    # Parse pipeline task for proper data generator class
-    pipeline_task = Manager.config.pipeline.pipeline_task
-    if pipeline_task == "classification":
-        Generator = ClassificationDataGenerator
-    elif pipeline_task == "segmentation":
-        raise NotImplementedError("Implementation not defined for this pipeline task")
-    elif pipeline_task == "regression":
-        raise NotImplementedError("Implementation not defined for this pipeline task")
-    else:
-        raise Exception(f"Invalid pipeline task: '{pipeline_task}'")
-
     # Create data generator
     batch_size = 32
+    Generator = Manager.task.generator
     PredictionData = Generator(df, PredictionHandler, ModelConfig, batch_size, training=False, shuffle=False)
 
     # Run model inference and get predictions
     results = model.predict(x=PredictionData)
-
-    # Parse results according to pipeline task
-    if pipeline_task == "classification":
-
-        # Get predicted labels and save
-        class_labels = Manager.config.pipeline.pipeline_params["CLASS_LABELS"]
-        pred_idx = np.argmax(results,axis=1)
-        pred_labels = [class_labels[i] for i in pred_idx]
-        df["prediction"] = pred_labels
-        PredictionHandler.save_csv(outpath)
-        
-    elif pipeline_task == "segmentation":
-        raise NotImplementedError("Implementation not defined for this pipeline task")
-    elif pipeline_task == "regression":
-        raise NotImplementedError("Implementation not defined for this pipeline task")
-    else:
-        raise Exception(f"Invalid pipeline task: '{pipeline_task}'")
+    Manager.task.process_results(results,df,PredictionHandler)
 
 
 if __name__=="__main__":

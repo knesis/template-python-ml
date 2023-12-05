@@ -100,6 +100,7 @@ class ClassificationTask():
         self.inventory_data_dir = Manager.inventory_data_dir
         self.inventory_cols = ["filename","class_name","class_label"]
         self.stratify_cols  = ["class_label"]
+        self.prediction_col = "prediction"
         # Prediction output CSV
         self.prediction_path = Manager.prediction_path
         # Data generator class
@@ -155,5 +156,5 @@ class ClassificationTask():
         pred_idx = np.argmax(results,axis=1)
         pred_labels = [class_labels[i] for i in pred_idx]
         # Save dataframe
-        df["prediction"] = pred_labels
+        df[self.prediction_col] = pred_labels
         Handler.save_csv(outpath)

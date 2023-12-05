@@ -1,6 +1,6 @@
 CHANGELOG
 
-v0.X
+v1.0-rc1
 ---------------------------------------
-- Added placeholder files
-- Added config file with desired parameters
+- Add main functionality for data invetory, model training, and prediction
+- Initial use-case is classification on local data
